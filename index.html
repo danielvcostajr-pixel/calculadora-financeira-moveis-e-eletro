@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Financeira - Varejo de Móveis e Eletrodomésticos</title>
+    
+    <!-- CDN Dependencies -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .input-focus { transition: all 0.3s ease; }
+        .input-focus:focus { transform: scale(1.02); }
+        .pulse-green { animation: pulse-green 2s infinite; }
+        @keyframes pulse-green {
+            0%, 100% { background-color: rgb(34, 197, 94); }
+            50% { background-color: rgb(22, 163, 74); }
+        }
+        .pulse-red { animation: pulse-red 2s infinite; }
+        @keyframes pulse-red {
+            0%, 100% { background-color: rgb(239, 68, 68); }
+            50% { background-color: rgb(220, 38, 38); }
+        }
+        .chart-container { position: relative; height: 400px; }
+        .gauge-container { position: relative; height: 250px; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header Principal -->
+    <header class="gradient-bg text-white shadow-2xl">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h1 class="text-4xl font-bold flex items-center">
+                        <i class="fas fa-calculator mr-3"></i>
+                        Calculadora Financeira
+                    </h1>
+                    <p class="text-xl opacity-90">Varejo de Móveis e Eletrodomésticos</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm opacity-75">Versão 1.0</div>
+                    <div class="text-sm opacity-75">19 de agosto de 2025</div>
+                </div>
+            </div>
+            
+            <!-- KPI Principal -->
+            <div class="bg-white/10 rounded-2xl p-8 backdrop-blur-sm">
+                <div class="text-center">
+                    <div class="text-lg font-medium mb-2">💰 Lucro Líquido</div>
+                    <div id="lucroLiquido" class="text-6xl font-bold mb-2">R$ 0,00</div>
+                    <div class="flex items-center justify-center space-x-4">
+                        <div id="margemLiquida" class="text-xl">Margem: 0%</div>
+                        <div id="indicadorLucro" class="w-4 h-4 rounded-full bg-gray-400"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Cards de Resumo -->
+    <section class="container mx-auto px-6 -mt-8 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <!-- Receitas -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover border-l-4 border-green-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-sm font-medium text-gray-600">Receita Total</div>
+                        <div id="receitaTotal" class="text-2xl font-bold text-green-600">R$ 0,00</div>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-full">
+                        <i class="fas fa-arrow-up text-green-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <div id="percentualReceita" class="text-sm text-gray-500">100% da operação</div>
+                </div>
+            </div>
+
+            <!-- Custos Variáveis -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover border-l-4 border-red-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-sm font-medium text-gray-600">Custos Variáveis</div>
+                        <div id="custosVariaveis" class="text-2xl font-bold text-red-600">R$ 0,00</div>
+                    </div>
+                    <div class="bg-red-100 p-3 rounded-full">
+                        <i class="fas fa-arrow-down text-red-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <div id="percentualCustosVar" class="text-sm text-gray-500">0% da receita</div>
+                </div>
+            </div>
+
+            <!-- Custos Fixos -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover border-l-4 border-orange-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-sm font-medium text-gray-600">Custos Fixos</div>
+                        <div id="custosFixos" class="text-2xl font-bold text-orange-600">R$ 0,00</div>
+                    </div>
+                    <div class="bg-orange-100 p-3 rounded-full">
+                        <i class="fas fa-cog text-orange-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <div id="percentualCustosFixos" class="text-sm text-gray-500">0% da receita</div>
+                </div>
+            </div>
+
+            <!-- Margem Contribuição -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover border-l-4 border-blue-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-sm font-medium text-gray-600">Margem Contribuição</div>
+                        <div id="margemContribuicao" class="text-2xl font-bold text-blue-600">R$ 0,00</div>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-full">
+                        <i class="fas fa-chart-line text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <div id="percentualMargemCont" class="text-sm text-gray-500">0% da receita</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Layout Principal -->
+    <main class="container mx-auto px-6 pb-12">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- COLUNA ESQUERDA: INPUTS -->
+            <div class="space-y-8">
+                
+                <!-- Controles Rápidos -->
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center">
+                        <i class="fas fa-bolt text-yellow-500 mr-2"></i>
+                        Ações Rápidas
+                    </h3>
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="carregarExemplo()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-download mr-2"></i>Carregar Exemplo
+                        </button>
+                        <button onclick="gerarCenarios()" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-dice mr-2"></i>Gerar Cenários
+                        </button>
+                        <button onclick="resetCalculadora()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-refresh mr-2"></i>Resetar
+                        </button>
+                        <button onclick="exportarDados()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-file-export mr-2"></i>Exportar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Seção 1: Receitas -->
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center text-green-700">
+                        <i class="fas fa-coins text-green-500 mr-2"></i>
+                        Receitas Operacionais
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Venda de Móveis (R$/mês)
+                                <span class="text-gray-400 text-xs block">Quantidade × Ticket Médio</span>
+                            </label>
+                            <div class="flex space-x-2">
+                                <input type="number" id="qtdMoveis" placeholder="Qtd" class="flex-1 rounded-lg border-gray-300 input-focus">
+                                <input type="number" id="ticketMoveis" placeholder="R$ Ticket" class="flex-1 rounded-lg border-gray-300 input-focus">
+                            </div>
+                            <div id="receitaMoveis" class="text-sm text-green-600 font-medium">= R$ 0,00</div>
+                        </div>
+
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Venda de Eletrodomésticos (R$/mês)
+                                <span class="text-gray-400 text-xs block">Quantidade × Ticket Médio</span>
+                            </label>
+                            <div class="flex space-x-2">
+                                <input type="number" id="qtdEletro" placeholder="Qtd" class="flex-1 rounded-lg border-gray-300 input-focus">
+                                <input type="number" id="ticketEletro" placeholder="R$ Ticket" class="flex-1 rounded-lg border-gray-300 input-focus">
+                            </div>
+                            <div id="receitaEletro" class="text-sm text-green-600 font-medium">= R$ 0,00</div>
+                        </div>
+
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Serviços e Garantias (R$/mês)
+                                <span class="text-gray-400 text-xs block">Montagem, entrega, seguros</span>
+                            </label>
+                            <input type="number" id="receitaServicos" placeholder="R$ Serviços" class="w-full rounded-lg border-gray-300 input-focus">
+                        </div>
+
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Outras Receitas (R$/mês)
+                                <span class="text-gray-400 text-xs block">Parcerias, comissões, etc.</span>
+                            </label>
+                            <input type="number" id="outrasReceitas" placeholder="R$ Outras" class="w-full rounded-lg border-gray-300 input-focus">
+                        </div>
+
+                        <div class="space-y-3 md:col-span-2 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                            <label class="block text-sm font-medium text-blue-800">
+                                <i class="fas fa-credit-card mr-1"></i>
+                                Receita de Crediário (Financeira) - R$/mês
+                                <span class="text-blue-600 text-xs block">Juros e encargos do financiamento próprio</span>
+                            </label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="text-xs text-blue-600">Montante Financiado (R$)</label>
+                                    <input type="number" id="montanteFinanciado" placeholder="R$ Financiado" class="w-full rounded-lg border-blue-300 input-focus">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-blue-600">Taxa de Juros Média (%/mês)</label>
+                                    <input type="number" id="taxaJurosCredito" placeholder="% Juros" step="0.1" class="w-full rounded-lg border-blue-300 input-focus">
+                                </div>
+                            </div>
+                            <div id="receitaCrediario" class="text-lg font-bold text-blue-700">= R$ 0,00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção 2: Custos Variáveis -->
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center text-red-700">
+                        <i class="fas fa-boxes text-red-500 mr-2"></i>
+                        Custos Variáveis
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Custo Produtos Móveis (R$/mês)
+                                <span class="text-gray-400 text-xs block">% sobre receita de móveis</span>
+                            </label>
+                            <div class="flex space-x-2">
+                                <input type="number" id="custoMoveisPct" placeholder="%" min="0" max="100" class="w-20 rounded-lg border-gray-300 input-focus">
+                                <div id="custoMoveis" class="flex-1 bg-gray-50 px-3 py-2 rounded-lg text-red-600 font-medium">R$ 0,00</div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Custo Produtos Eletro (R$/mês)
+                                <span class="text-gray-400 text-xs block">% sobre receita de eletro</span>
+                            </label>
+                            <div class="flex space-x-2">
+                                <input type="number" id="custoEletroPct" placeholder="%" min="0" max="100" class="w-20 rounded-lg border-gray-300 input-focus">
+                                <div id="custoEletro" class="flex-1 bg-gray-50 px-3 py-2 rounded-lg text-red-600 font-medium">R$ 0,00</div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Comissões Vendas (R$/mês)
+                                <span class="text-gray-400 text-xs block">% sobre receita total</span>
+                            </label>
+                            <div class="flex space-x-2">
+                                <input type="number" id="comissoesPct" placeholder="%" min="0" max="100" class="w-20 rounded-lg border-gray-300 input-focus">
+                                <div id="comissoes" class="flex-1 bg-gray-50 px-3 py-2 rounded-lg text-red-600 font-medium">R$ 0,00</div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Fretes e Logística (R$/mês)
+                                <span class="text-gray-400 text-xs block">Entrega e transporte</span>
+                            </label>
+                            <input type="number" id="fretes" placeholder="R$ Fretes" class="w-full rounded-lg border-gray-300 input-focus">
+                        </div>
+
+                        <div class="space-y-3 md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Impostos Variáveis (R$/mês)
+                                <span class="text-gray-400 text-xs block">ICMS, PIS, COFINS, etc.</span>
+                            </label>
+                            <div class="flex space-x-2">
+                                <input type="number" id="impostosVariaveisPct" placeholder="%" min="0" max="100" class="w-20 rounded-lg border-gray-300 input-focus">
+                                <div id="impostosVariaveis" class="flex-1 bg-gray-50 px-3 py-2 rounded-lg text-red-600 font-medium">R$ 0,00</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção 3: Custos Fixos -->
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center text-orange-700">
+                        <i class="fas fa-building text-orange-500 mr-2"></i>
+                        Custos Fixos Mensais
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-gray-700">Aluguel/Imóvel (R$/mês)</label>
+                            <input type="number" id="aluguel" placeholder="R$ Aluguel" class="w-full rounded-lg border-gray-300 input-focus">
+                        </div>
+
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-gray-700">Salários + Encargos (R$/mês)</label>
+                            <input type="number" id="salarios" placeholder="R$ Folha" class="w-full rounded-lg border-gray-300 input-focus">
+                        </div>
+
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-gray-700">Energia/Água/Telecomunicações</label>
+                            <input type="number" id="utilidades" placeholder="R$ Contas" class="w-full rounded-lg border-gray-300 input-focus">
+                        </div>
+
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-gray-700">Seguros e Licenças</label>
+                            <input type="number" id="seguros" placeholder="R$ Seguros" class="w-full rounded-lg border-gray-300 input-focus">
+                        </div>
+
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-gray-700">Marketing e Propaganda</label>
+                            <input type="number" id="marketing" placeholder="R$ Marketing" class="w-full rounded-lg border-gray-300 input-focus">
+                        </div>
+
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-gray-700">Outros Custos Fixos</label>
+                            <input type="number" id="outrosCustosFixos" placeholder="R$ Outros" class="w-full rounded-lg border-gray-300 input-focus">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção 4: Indicadores Operacionais (Nível 4) -->
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center text-purple-700">
+                        <i class="fas fa-chart-line text-purple-500 mr-2"></i>
+                        Indicadores Operacionais (KPIs)
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        
+                        <!-- Performance de Vendas -->
+                        <div class="space-y-4 bg-purple-50 p-4 rounded-lg">
+                            <h4 class="font-medium text-purple-800 flex items-center">
+                                <i class="fas fa-shopping-cart mr-1"></i>
+                                Performance de Vendas
+                            </h4>
+                            
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-gray-700">
+                                    Número de Vendas Realizadas (mês)
+                                    <span class="text-gray-400 text-xs block">Quantidade total de transações</span>
+                                </label>
+                                <input type="number" id="numeroVendas" placeholder="Qtd vendas" class="w-full rounded-lg border-gray-300 input-focus">
+                                <div id="ticketMedioCalculado" class="text-sm text-purple-600 font-medium">Ticket Médio: R$ 0,00</div>
+                            </div>
+
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-gray-700">
+                                    Número de Visitantes na Loja (mês)
+                                    <span class="text-gray-400 text-xs block">Total de pessoas que entraram</span>
+                                </label>
+                                <input type="number" id="numeroVisitantes" placeholder="Visitantes" class="w-full rounded-lg border-gray-300 input-focus">
+                                <div id="taxaConversao" class="text-sm text-purple-600 font-medium">Taxa Conversão: 0%</div>
+                            </div>
+                        </div>
+
+                        <!-- Gestão Financeira e Estoque -->
+                        <div class="space-y-4 bg-indigo-50 p-4 rounded-lg">
+                            <h4 class="font-medium text-indigo-800 flex items-center">
+                                <i class="fas fa-boxes mr-1"></i>
+                                Gestão Financeira e Estoque
+                            </h4>
+                            
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-gray-700">
+                                    Valor Total a Receber - Crediário (R$)
+                                    <span class="text-gray-400 text-xs block">Saldo total de recebíveis</span>
+                                </label>
+                                <input type="number" id="valorTotalReceber" placeholder="R$ A receber" class="w-full rounded-lg border-gray-300 input-focus">
+                            </div>
+
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-gray-700">
+                                    Parcelas em Atraso > 90 dias (R$)
+                                    <span class="text-gray-400 text-xs block">Valor inadimplente</span>
+                                </label>
+                                <input type="number" id="parcelasAtraso" placeholder="R$ Atraso" class="w-full rounded-lg border-gray-300 input-focus">
+                                <div id="taxaInadimplencia" class="text-sm text-red-600 font-medium">Inadimplência: 0%</div>
+                            </div>
+
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-gray-700">
+                                    Valor do Estoque Médio (R$)
+                                    <span class="text-gray-400 text-xs block">Valor médio do estoque</span>
+                                </label>
+                                <input type="number" id="estoqueMedia" placeholder="R$ Estoque" class="w-full rounded-lg border-gray-300 input-focus">
+                                <div id="giroEstoque" class="text-sm text-indigo-600 font-medium">Giro de Estoque: 0x/ano</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLUNA DIREITA: ANÁLISES E GRÁFICOS -->
+            <div class="space-y-8">
+                
+                <!-- Análise de Ponto de Equilíbrio -->
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center text-yellow-700">
+                        <i class="fas fa-balance-scale text-yellow-500 mr-2"></i>
+                        Ponto de Equilíbrio
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-yellow-50 rounded-xl p-4">
+                            <div class="text-sm text-yellow-700 mb-1">Receita Necessária</div>
+                            <div id="pontoEquilibrioReceita" class="text-2xl font-bold text-yellow-800">R$ 0,00</div>
+                        </div>
+                        <div class="bg-yellow-50 rounded-xl p-4">
+                            <div class="text-sm text-yellow-700 mb-1">Vendas Necessárias</div>
+                            <div id="pontoEquilibrioUnidades" class="text-2xl font-bold text-yellow-800">0 un.</div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="bg-gray-200 rounded-full h-4">
+                            <div id="progressoEquilibrio" class="bg-gradient-to-r from-red-500 to-green-500 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>Déficit</span>
+                            <span id="statusEquilibrio">Equilíbrio</span>
+                            <span>Lucro</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráfico Principal: Composição do Resultado -->
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center">
+                        <i class="fas fa-chart-pie text-purple-500 mr-2"></i>
+                        Composição do Resultado
+                    </h3>
+                    <div class="chart-container">
+                        <canvas id="chartComposicao"></canvas>
+                    </div>
+                </div>
+
+                <!-- Margem e Indicadores -->
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center">
+                        <i class="fas fa-tachometer-alt text-blue-500 mr-2"></i>
+                        Indicadores de Margem
+                    </h3>
+                    <div class="space-y-4">
+                        
+                        <div class="flex items-center justify-between p-4 bg-green-50 rounded-xl">
+                            <div>
+                                <div class="font-medium text-green-800">Margem Bruta</div>
+                                <div class="text-sm text-green-600">Receita - Custos Variáveis</div>
+                            </div>
+                            <div class="text-right">
+                                <div id="margemBrutaValor" class="text-xl font-bold text-green-700">R$ 0,00</div>
+                                <div id="margemBrutaPct" class="text-sm text-green-600">0%</div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between p-4 bg-blue-50 rounded-xl">
+                            <div>
+                                <div class="font-medium text-blue-800">Margem Contribuição</div>
+                                <div class="text-sm text-blue-600">Cobre custos fixos</div>
+                            </div>
+                            <div class="text-right">
+                                <div id="margemContribuicaoValor" class="text-xl font-bold text-blue-700">R$ 0,00</div>
+                                <div id="margemContribuicaoPct" class="text-sm text-blue-600">0%</div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between p-4 bg-purple-50 rounded-xl">
+                            <div>
+                                <div class="font-medium text-purple-800">Margem Líquida</div>
+                                <div class="text-sm text-purple-600">Resultado final</div>
+                            </div>
+                            <div class="text-right">
+                                <div id="margemLiquidaValor" class="text-xl font-bold text-purple-700">R$ 0,00</div>
+                                <div id="margemLiquidaPct" class="text-sm text-purple-600">0%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráfico de Margem Gauge -->
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center">
+                        <i class="fas fa-gauge text-indigo-500 mr-2"></i>
+                        Medidor de Performance
+                    </h3>
+                    <div class="gauge-container">
+                        <canvas id="gaugeChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Dashboard de KPIs -->
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center text-purple-700">
+                        <i class="fas fa-tachometer-alt text-purple-500 mr-2"></i>
+                        Dashboard de KPIs Operacionais
+                    </h3>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="bg-purple-50 rounded-xl p-4 text-center">
+                            <div class="text-sm text-purple-600 mb-1">Ticket Médio Real</div>
+                            <div id="kpiTicketMedio" class="text-xl font-bold text-purple-700">R$ 0,00</div>
+                            <div id="impactoTicketMedio" class="text-xs text-purple-500 mt-1">Impacto no resultado</div>
+                        </div>
+                        
+                        <div class="bg-green-50 rounded-xl p-4 text-center">
+                            <div class="text-sm text-green-600 mb-1">Taxa de Conversão</div>
+                            <div id="kpiTaxaConversao" class="text-xl font-bold text-green-700">0%</div>
+                            <div id="impactoConversao" class="text-xs text-green-500 mt-1">Meta: 15-25%</div>
+                        </div>
+                        
+                        <div class="bg-red-50 rounded-xl p-4 text-center">
+                            <div class="text-sm text-red-600 mb-1">Taxa Inadimplência</div>
+                            <div id="kpiInadimplencia" class="text-xl font-bold text-red-700">0%</div>
+                            <div id="impactoInadimplencia" class="text-xs text-red-500 mt-1">Meta: < 5%</div>
+                        </div>
+                        
+                        <div class="bg-blue-50 rounded-xl p-4 text-center">
+                            <div class="text-sm text-blue-600 mb-1">Giro de Estoque</div>
+                            <div id="kpiGiroEstoque" class="text-xl font-bold text-blue-700">0x</div>
+                            <div id="impactoGiroEstoque" class="text-xs text-blue-500 mt-1">Meta: 4-6x/ano</div>
+                        </div>
+                    </div>
+
+                    <!-- Alertas de Performance -->
+                    <div class="space-y-2">
+                        <h4 class="font-medium text-gray-800 mb-2">🚨 Alertas de Performance</h4>
+                        <div id="alertasKPI" class="space-y-2">
+                            <!-- Alertas serão inseridos dinamicamente -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Análise de Impacto Financeiro -->
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center text-indigo-700">
+                        <i class="fas fa-link text-indigo-500 mr-2"></i>
+                        Impacto dos KPIs no Resultado
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg">
+                            <h4 class="font-medium text-indigo-800 mb-2">💰 Receita de Crediário</h4>
+                            <div id="analiseCrediario" class="text-sm text-gray-600">
+                                Aguardando dados do crediário...
+                            </div>
+                        </div>
+
+                        <div class="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg">
+                            <h4 class="font-medium text-purple-800 mb-2">📈 Eficiência de Vendas</h4>
+                            <div id="analiseVendas" class="text-sm text-gray-600">
+                                Aguardando dados de vendas...
+                            </div>
+                        </div>
+
+                        <div class="bg-gradient-to-r from-red-50 to-orange-50 p-4 rounded-lg">
+                            <h4 class="font-medium text-red-800 mb-2">⚠️ Risco de Inadimplência</h4>
+                            <div id="analiseRisco" class="text-sm text-gray-600">
+                                Aguardando dados de crediário...
+                            </div>
+                        </div>
+
+                        <div class="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg">
+                            <h4 class="font-medium text-green-800 mb-2">📦 Eficiência do Estoque</h4>
+                            <div id="analiseEstoque" class="text-sm text-gray-600">
+                                Aguardando dados de estoque...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cenários -->
+                <div id="cenariosSection" class="bg-white rounded-2xl shadow-lg p-6" style="display: none;">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center">
+                        <i class="fas fa-crystal-ball text-pink-500 mr-2"></i>
+                        Análise de Cenários
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        
+                        <div class="bg-red-50 rounded-xl p-4 border border-red-200">
+                            <div class="font-medium text-red-800 mb-2 flex items-center">
+                                <i class="fas fa-arrow-down mr-1"></i>
+                                Pessimista (-20%)
+                            </div>
+                            <div id="cenarioPessimista" class="text-lg font-bold text-red-700">R$ 0,00</div>
+                            <div id="cenarioPessimistaPct" class="text-sm text-red-600">0%</div>
+                        </div>
+
+                        <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                            <div class="font-medium text-blue-800 mb-2 flex items-center">
+                                <i class="fas fa-minus mr-1"></i>
+                                Atual (Base)
+                            </div>
+                            <div id="cenarioAtual" class="text-lg font-bold text-blue-700">R$ 0,00</div>
+                            <div id="cenarioAtualPct" class="text-sm text-blue-600">0%</div>
+                        </div>
+
+                        <div class="bg-green-50 rounded-xl p-4 border border-green-200">
+                            <div class="font-medium text-green-800 mb-2 flex items-center">
+                                <i class="fas fa-arrow-up mr-1"></i>
+                                Otimista (+20%)
+                            </div>
+                            <div id="cenarioOtimista" class="text-lg font-bold text-green-700">R$ 0,00</div>
+                            <div id="cenarioOtimistaPct" class="text-sm text-green-600">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-6 text-center">
+            <p class="text-gray-400">© 2025 Calculadora Financeira - Varejo de Móveis e Eletrodomésticos</p>
+            <p class="text-gray-500 text-sm mt-2">Baseada na Árvore de Indicadores Estratégicos v1.0</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/calculator.js"></script>
+</body>
+</html>
